@@ -1,0 +1,89 @@
+#include <LiquidCrystal_I2C.h>
+
+// Initialize the LCD display
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // I2C address may vary, adjust if needed
+
+// Pin configuration for the metal detector
+const int amplitudeOut = A0;  // Analog pin connected to the amplitude detector coil - pin 23
+const int phaseOut = A1;  // Analog pin connected to the amplitude detector coil - pin 24
+const int redLedPin = 8; // pin 14
+const int greenLedPin = 9; // pin 15
+const int blueLedPin = 10; // pin 16
+const float VAref = 1.925;  // Reference voltage for comparison
+const float VPref = 2;
+
+void setup() {
+  Serial.begin(9600);
+  lcd.init();
+  lcd.init();
+  lcd.backlight();
+  lcd.backlight();
+  lcd.setCursor(1,0);
+  lcd.print("Metal Detector");
+  lcd.setCursor(0,1);
+  lcd.print("Waveform Wonders");
+  delay(5000);
+  lcd.clear();
+}
+
+void loop() {
+  float amplitude = getAmplitude();  // Get the amplitude value from the receiver coil
+  float phase = getPhase();
+  Serial.println(amplitude);
+  Serial.println(phase);
+
+  // Check if the amplitude value indicates the presence of metal
+  if (amplitude != VAref || phase != VPref) {
+    lcd.clear();
+    lcd.print("Metal Detected!");
+
+    // Check if amplitude increased or decreased
+    if (amplitude < VAref) {
+      lcd.setCursor(0, 1);
+      lcd.print("Ferrous Metal");
+
+      digitalWrite(greenLedPin, HIGH);
+      delay(1000);
+      digitalWrite(greenLedPin, LOW);
+      delay(1000);
+
+    } else if (amplitude > VAref) {
+      lcd.setCursor(0, 1);
+      lcd.print("Non-Ferrous Metal");
+
+      digitalWrite(blueLedPin, HIGH);
+      delay(1000);
+      digitalWrite(blueLedPin, LOW);
+      delay(1000);
+    } 
+    delay(2000);
+    lcd.clear();
+  }
+  else 
+  {
+    lcd.clear();
+    lcd.print("Searching");
+
+    digitalWrite(redLedPin, HIGH);
+    delay(1000);
+    digitalWrite(redLedPin, LOW);
+    delay(1000);
+  }
+}
+
+// Simulated function to get the amplitude value from the receiver coil
+float getAmplitude() {
+  int rawValue = analogRead(amplitudeOut);
+  
+  // Convert the raw ADC value to voltage
+  float voltage = rawValue * (5.0 / 1023.0);
+  return voltage;
+}
+
+float getPhase() {
+  int rawValue = analogRead(phaseOut);
+
+  // Convert the raw ADC value to a phase value (in degrees)
+  float phaseVoltage = map(rawValue, 0, 360, 0, 5);
+  return phaseVoltage;
+}
